@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Votos</title>
+<style>
+  :root{
+    --paper: #f6f3ec;
+    --paper-alt: #efeadf;
+    --ink: #23283a;
+    --ink-soft: #565f78;
+    --line: #d8d2c2;
+    --accent: #7a3b2e;
+    --accent-soft: #c9a26a;
+    --tab: #2f3b52;
+    --danger: #a1352b;
+    --jd: #2f3b52;
+    --jd-soft: #dbe0ea;
+    --ci: #6b3f7a;
+    --ci-soft: #e8dcee;
+    --radius: 3px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin:0; padding:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Iowan Old Style','Palatino Linotype', Georgia, serif;
+  }
+  body { min-height:100vh; }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  header.top {
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+  }
+  header.top .brand { display:flex; flex-direction:column; gap:2px; }
+  header.top .brand .eyebrow {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  header.top h1 { margin:0; font-size: 26px; font-weight: 700; letter-spacing: 0.2px; }
+  header.top .count {
+    font-family:'Courier New', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  /* Selector de junta */
+  .junta-tabs {
+    display:flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .junta-tab {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 2px;
+    padding: 11px 10px;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    background: #fff;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: all .12s ease;
+  }
+  .junta-tab .name {
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .junta-tab .n {
+    font-size: 10px;
+    color: var(--ink-soft);
+  }
+  .junta-tab[data-junta="jd"].active { background: var(--jd); border-color: var(--jd); }
+  .junta-tab[data-junta="jd"].active .name,
+  .junta-tab[data-junta="jd"].active .n { color: #f2efe5; }
+  .junta-tab[data-junta="ci"].active { background: var(--ci); border-color: var(--ci); }
+  .junta-tab[data-junta="ci"].active .name,
+  .junta-tab[data-junta="ci"].active .n { color: #f2efe5; }
+  .junta-tab[data-junta="todos"].active { background: var(--ink); border-color: var(--ink); }
+  .junta-tab[data-junta="todos"].active .name,
+  .junta-tab[data-junta="todos"].active .n { color: #f2efe5; }
+  .junta-tab:not(.active):hover { background: var(--paper-alt); }
+
+  .searchbar {
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    padding: 10px 0 16px;
+    z-index: 5;
+  }
+  .searchbar .field {
+    position:relative;
+    display:flex;
+    align-items:center;
+    background: #fff;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: 3px 3px 0 var(--accent-soft);
+  }
+  .searchbar input[type="text"] {
+    flex:1; border:none; outline:none; background:transparent;
+    font-family: inherit; font-size: 16px; padding: 12px 14px; color: var(--ink);
+  }
+
+  .add-btn {
+    display:flex; align-items:center; gap:8px; width:100%;
+    margin: 4px 0 26px;
+    padding: 12px 14px;
+    background: var(--tab);
+    color: #f2efe5;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .add-btn:hover { background: #232c40; }
+  .add-btn .plus { font-size: 16px; font-family: Georgia, serif; line-height:1; }
+
+  /* Formulario */
+  .form-card {
+    background: #fff;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 26px;
+    box-shadow: 4px 4px 0 var(--line);
+  }
+  .form-card .label {
+    font-family:'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+    display:block;
+  }
+  .form-card input[type="text"], .form-card textarea {
+    width:100%;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    background: var(--paper-alt);
+    margin-bottom: 16px;
+    resize: vertical;
+  }
+  .form-card textarea { min-height: 140px; line-height:1.5; }
+
+  .junta-picker {
+    display:flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .junta-picker button {
+    flex:1;
+    padding: 9px 8px;
+    font-family:'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper-alt);
+    color: var(--ink-soft);
+    cursor:pointer;
+  }
+  .junta-picker button[data-junta="jd"].picked { background: var(--jd); border-color: var(--jd); color:#f2efe5; }
+  .junta-picker button[data-junta="ci"].picked { background: var(--ci); border-color: var(--ci); color:#f2efe5; }
+
+  .form-actions { display:flex; gap:10px; justify-content:flex-end; }
+  .btn {
+    font-family:'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .btn.primary { background: var(--ink); color: #f6f3ec; }
+  .btn.primary:hover { background:#000; }
+  .btn.ghost:hover { background: var(--paper-alt); }
+
+  /* Lista */
+  .entry {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--tab);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow:hidden;
+  }
+  .entry[data-junta="jd"] { border-left-color: var(--jd); }
+  .entry[data-junta="ci"] { border-left-color: var(--ci); }
+
+  .entry .head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    cursor:pointer;
+  }
+  .entry .head .title-row {
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .entry .head .title { font-size: 17px; font-weight: 700; }
+  .badge {
+    font-family:'Courier New', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .badge.jd { background: var(--jd-soft); color: var(--jd); }
+  .badge.ci { background: var(--ci-soft); color: var(--ci); }
+  .entry .head .meta {
+    font-family:'Courier New', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-top:4px;
+  }
+  .entry .chevron {
+    font-family: 'Courier New', monospace;
+    color: var(--ink-soft);
+    transition: transform .15s ease;
+    flex-shrink:0;
+  }
+  .entry.open .chevron { transform: rotate(90deg); }
+
+  .entry .body {
+    display:none;
+    padding: 0 16px 16px;
+    border-top: 1px dashed var(--line);
+  }
+  .entry.open .body { display:block; }
+  .entry .voto-text {
+    white-space: pre-wrap;
+    font-size: 15px;
+    line-height:1.6;
+    color: var(--ink);
+    padding-top: 14px;
+    margin-bottom: 14px;
+  }
+  .entry .row-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .entry .row-actions button {
+    font-family:'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--ink);
+    background:#fff;
+    cursor:pointer;
+  }
+  .entry .row-actions button.copy { border-color: var(--accent); color: var(--accent); }
+  .entry .row-actions button.copy.copied { background: var(--accent); color:#fff; }
+  .entry .row-actions button.del { border-color: var(--danger); color: var(--danger); }
+  .entry .row-actions button:hover { filter: brightness(0.96); }
+
+  .empty { text-align:center; padding: 50px 20px; color: var(--ink-soft); }
+  .empty .big { font-size: 40px; margin-bottom: 10px; }
+  .empty p { font-size: 14px; max-width: 340px; margin: 6px auto 0; }
+
+  .status {
+    font-family:'Courier New', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align:center;
+    padding-top: 30px;
+  }
+
+  mark { background: var(--accent-soft); color: var(--ink); padding: 0 1px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Secretaría · Archivo permanente</span>
+      <h1>Registro de Votos</h1>
+    </div>
+    <div class="count" id="countLabel">— entradas</div>
+  </header>
+
+  <div class="junta-tabs" id="juntaTabs">
+    <div class="junta-tab active" data-junta="todos">
+      <span class="name">Todos</span>
+      <span class="n" id="nTodos">0</span>
+    </div>
+    <div class="junta-tab" data-junta="jd">
+      <span class="name">Junta Directiva</span>
+      <span class="n" id="nJd">0</span>
+    </div>
+    <div class="junta-tab" data-junta="ci">
+      <span class="name">Comisión Interna</span>
+      <span class="n" id="nCi">0</span>
+    </div>
+  </div>
+
+  <div class="searchbar">
+    <div class="field">
+      <input type="text" id="searchInput" placeholder="Buscar por tema… p. ej. 'auxilio iglesia', 'salir del territorio'">
+    </div>
+  </div>
+
+  <button class="add-btn" id="toggleFormBtn">
+    <span class="plus">+</span> Añadir voto
+  </button>
+
+  <div class="form-card" id="formCard" style="display:none;">
+    <label class="label">Junta</label>
+    <div class="junta-picker" id="juntaPicker">
+      <button type="button" data-junta="jd">Junta Directiva</button>
+      <button type="button" data-junta="ci">Comisión Interna</button>
+    </div>
+    <label class="label">Título / tema del voto</label>
+    <input type="text" id="votoTitle" placeholder="Ej. Auxilio a iglesia hermana">
+    <label class="label">Texto del voto</label>
+    <textarea id="votoText" placeholder="Pega o escribe aquí el texto exacto tal como debe ir en el acta…"></textarea>
+    <div class="form-actions">
+      <button class="btn ghost" id="cancelBtn">Cancelar</button>
+      <button class="btn primary" id="saveBtn">Guardar voto</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="status" id="statusLabel"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'votos-registro';
+let votos = [];
+let editingId = null;
+let activeJunta = 'todos'; // 'todos' | 'jd' | 'ci'
+let pickedJunta = 'jd'; // junta chosen inside the add/edit form
+
+const listEl = document.getElementById('list');
+const searchInput = document.getElementById('searchInput');
+const formCard = document.getElementById('formCard');
+const toggleFormBtn = document.getElementById('toggleFormBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const saveBtn = document.getElementById('saveBtn');
+const votoTitle = document.getElementById('votoTitle');
+const votoText = document.getElementById('votoText');
+const countLabel = document.getElementById('countLabel');
+const statusLabel = document.getElementById('statusLabel');
+const juntaTabs = document.getElementById('juntaTabs');
+const juntaPicker = document.getElementById('juntaPicker');
+
+const juntaLabel = { jd: 'Junta Directiva', ci: 'Comisión Interna' };
+
+function uid(){ return 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
+
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function highlight(text, query){
+  if(!query) return escapeHtml(text);
+  const escaped = escapeHtml(text);
+  const q = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escaped.replace(new RegExp(q, 'gi'), m => `<mark>${m}</mark>`);
+}
+
+function loadVotos(){
+  statusLabel.textContent = '';
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    votos = raw ? JSON.parse(raw) : [];
+    // migración: entradas antiguas sin junta se asignan a Junta Directiva por defecto
+    let migrated = false;
+    votos.forEach(v => { if(!v.junta){ v.junta = 'jd'; migrated = true; } });
+    if(migrated) persist();
+  }catch(e){
+    votos = [];
+    statusLabel.textContent = 'No se pudo leer el almacenamiento local de este navegador.';
+  }
+  render();
+}
+
+function persist(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(votos));
+  }catch(e){
+    statusLabel.textContent = 'No se pudo guardar. Verifica el espacio de almacenamiento del navegador.';
+  }
+}
+
+function formatDate(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function render(){
+  const query = searchInput.value.trim().toLowerCase();
+
+  const nJd = votos.filter(v => v.junta === 'jd').length;
+  const nCi = votos.filter(v => v.junta === 'ci').length;
+  document.getElementById('nTodos').textContent = votos.length;
+  document.getElementById('nJd').textContent = nJd;
+  document.getElementById('nCi').textContent = nCi;
+
+  const filtered = votos
+    .filter(v => activeJunta === 'todos' || v.junta === activeJunta)
+    .filter(v => !query || v.title.toLowerCase().includes(query) || v.text.toLowerCase().includes(query))
+    .sort((a,b) => a.title.localeCompare(b.title, 'es'));
+
+  const scopeCount = activeJunta === 'todos' ? votos.length : votos.filter(v => v.junta === activeJunta).length;
+  countLabel.textContent = scopeCount === 1 ? '1 entrada' : `${scopeCount} entradas`;
+
+  if(votos.length === 0){
+    listEl.innerHTML = `<div class="empty">
+      <div class="big">🗂️</div>
+      <div style="font-weight:700;">Aún no hay votos guardados</div>
+      <p>Añade tu primer voto con el botón de arriba, eligiendo a qué junta pertenece.</p>
+    </div>`;
+    return;
+  }
+
+  if(filtered.length === 0){
+    const scopeName = activeJunta === 'todos' ? '' : ` en ${juntaLabel[activeJunta]}`;
+    listEl.innerHTML = `<div class="empty">
+      <div class="big">🔍</div>
+      <div style="font-weight:700;">Sin resultados${scopeName}${query ? ` para "${escapeHtml(searchInput.value)}"` : ''}</div>
+      <p>Prueba con otra palabra clave, cambia de junta arriba, o añade este voto si aún no existe.</p>
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(v => `
+    <div class="entry" data-id="${v.id}" data-junta="${v.junta}">
+      <div class="head" data-action="toggle">
+        <div>
+          <div class="title-row">
+            <div class="title">${highlight(v.title, query)}</div>
+            ${activeJunta === 'todos' ? `<span class="badge ${v.junta}">${juntaLabel[v.junta]}</span>` : ''}
+          </div>
+          <div class="meta">Guardado ${formatDate(v.createdAt)}${v.updatedAt && v.updatedAt !== v.createdAt ? ' · editado ' + formatDate(v.updatedAt) : ''}</div>
+        </div>
+        <div class="chevron">▶</div>
+      </div>
+      <div class="body">
+        <div class="voto-text">${highlight(v.text, query)}</div>
+        <div class="row-actions">
+          <button class="copy" data-action="copy">Copiar texto</button>
+          <button data-action="edit">Editar</button>
+          <button class="del" data-action="delete">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+searchInput.addEventListener('input', render);
+
+juntaTabs.addEventListener('click', (e) => {
+  const tab = e.target.closest('.junta-tab');
+  if(!tab) return;
+  activeJunta = tab.dataset.junta;
+  [...juntaTabs.children].forEach(t => t.classList.toggle('active', t === tab));
+  render();
+});
+
+function setPickedJunta(j){
+  pickedJunta = j;
+  [...juntaPicker.children].forEach(b => b.classList.toggle('picked', b.dataset.junta === j));
+}
+
+juntaPicker.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  setPickedJunta(btn.dataset.junta);
+});
+
+toggleFormBtn.addEventListener('click', () => {
+  editingId = null;
+  votoTitle.value = '';
+  votoText.value = '';
+  setPickedJunta(activeJunta === 'ci' ? 'ci' : 'jd');
+  formCard.style.display = formCard.style.display === 'none' ? 'block' : 'none';
+  if(formCard.style.display === 'block') votoTitle.focus();
+});
+
+cancelBtn.addEventListener('click', () => {
+  formCard.style.display = 'none';
+  editingId = null;
+});
+
+saveBtn.addEventListener('click', () => {
+  const title = votoTitle.value.trim();
+  const text = votoText.value.trim();
+  if(!title || !text){
+    statusLabel.textContent = 'Escribe un título y el texto del voto antes de guardar.';
+    setTimeout(() => statusLabel.textContent = '', 2500);
+    return;
+  }
+
+  if(editingId){
+    const v = votos.find(x => x.id === editingId);
+    if(v){
+      v.title = title;
+      v.text = text;
+      v.junta = pickedJunta;
+      v.updatedAt = Date.now();
+    }
+    editingId = null;
+  } else {
+    votos.push({ id: uid(), title, text, junta: pickedJunta, createdAt: Date.now() });
+  }
+
+  persist();
+  formCard.style.display = 'none';
+  votoTitle.value = '';
+  votoText.value = '';
+  render();
+});
+
+listEl.addEventListener('click', (e) => {
+  const entryEl = e.target.closest('.entry');
+  if(!entryEl) return;
+  const id = entryEl.dataset.id;
+  const action = e.target.dataset.action;
+  const v = votos.find(x => x.id === id);
+  if(!v) return;
+
+  if(action === 'toggle' || (!action && e.target.closest('.head'))){
+    entryEl.classList.toggle('open');
+    return;
+  }
+
+  if(action === 'copy'){
+    navigator.clipboard.writeText(v.text).then(() => {
+      const btn = e.target;
+      const original = btn.textContent;
+      btn.textContent = 'Copiado ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+    }).catch(() => {
+      alert('No se pudo copiar automáticamente. Selecciona y copia el texto manualmente.');
+    });
+  }
+
+  if(action === 'edit'){
+    editingId = v.id;
+    votoTitle.value = v.title;
+    votoText.value = v.text;
+    setPickedJunta(v.junta);
+    formCard.style.display = 'block';
+    formCard.scrollIntoView({ behavior:'smooth', block:'start' });
+    votoTitle.focus();
+  }
+
+  if(action === 'delete'){
+    if(confirm(`¿Eliminar el voto "${v.title}"? Esta acción no se puede deshacer.`)){
+      votos = votos.filter(x => x.id !== id);
+      persist();
+      render();
+    }
+  }
+});
+
+setPickedJunta('jd');
+loadVotos();
+</script>
+</body>
+</html>
